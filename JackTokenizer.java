@@ -30,17 +30,12 @@ public class JackTokenizer {
         char current_char;
         while(state != "finish" && state != "error") {
             current_char = (char)pr.read();
+            System.out.println(current_char);
             switch(state) {
             case "start":
                 // whitespace
                 if(current_char == ' ') {
                     break;
-                }
-                // comment
-                else if(current_char == '/') {
-                    tokens.add(current_token);
-                    pr.unread(current_char);
-                    state = "in_symbol";
                 }
                 // int
                 else if(Character.isDigit(current_char)) {
@@ -114,6 +109,7 @@ public class JackTokenizer {
                 }
                 break;
             case "in_symbol":
+                //TODO
                 if(syms.contains(current_char)) {
                     current_token += current_char;
                     state = "in_symbol";
@@ -136,7 +132,7 @@ public class JackTokenizer {
         return token_type;
     }
 
-    public String keyWord() {
+    public String keyword() {
         if(token_type == TokenType.KEYWORD) {
             return current_token;
         }

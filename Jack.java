@@ -19,7 +19,8 @@ public class Jack {
         if (directory.isDirectory()){
             String fileName = directory.getName();
             files = directory.list();
-        }else{
+        }
+        else{
             files[0] = directory.getName();
             path = directory.getParent();
         }
