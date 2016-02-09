@@ -48,12 +48,19 @@ public class JackTokenizer {
                 }
                 break;
             case "in_symbol":
+                // label symbol and advance
                 break;
             case "in_identifier":
+                // gather and label identifier
                 break;
             case "in_int_const":
+                // gather and label int
                 break;
             case "in_string_const":
+                // gather and label string
+                break;
+            case default:
+                // advance line or error
                 break;
             }
         }
