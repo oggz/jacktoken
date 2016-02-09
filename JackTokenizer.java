@@ -4,13 +4,17 @@ import java.util.Arrays;
 
 public class JackTokenizer {
 
-   enum TokenType {KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST;}
-   enum Keyword {CLASS_METHOD,FUNCTION,CONSTRUCTOR,INT,BOOLEAN,CHAR,VOID,VAR,STATIC,FEILD,LET,DO,IF,ELSE,WHILE,RETURN,TRUE,FALSE,NULL,THIS;}
+    enum TokenType {KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST;}
+    enum Keyword {CLASS_METHOD,FUNCTION,CONSTRUCTOR,INT,BOOLEAN,CHAR,VOID,VAR,STATIC,FIELD,LET,DO,IF,ELSE,WHILE,RETURN,TRUE,FALSE,NULL,THIS;}
+    ArrayList<String> keywords = new ArrayList<String>(Arrays.asList("class_method","function","constructor","int","boolean","char","void",
+                                                                        "var","static","field","let","do","if","else","while","return","true","false","null","this"));
+    ArrayList<String> syms = new ArrayList<String>(Arrays.asList("{","}","(",")","[","]",".",",",";","+","-","*","/","&","|","<",">","=","~"));
 
     PushbackReader pr;
     String state = "start";
     String current_token = "";
     ArrayList<String> tokens;
+    TokenType token_type;
 
     public JackTokenizer(String infile) throws IOException {
         pr = new PushbackReader(new FileReader(infile));
@@ -24,27 +28,89 @@ public class JackTokenizer {
 
     public void advance() throws IOException {
         char current_char;
-        ArrayList<String> syms = new ArrayList<String>(Arrays.asList("/", ">", "<", "..."));
         while(state != "finish" && state != "error") {
             current_char = (char)pr.read();
             switch(state) {
             case "start":
-                if(Character.isDigit(current_char)) {
+                // whitespace
+                if(current_char == ' ') {
+                    break;
+                }
+                // comment
+                else if(current_char == '/') {
+                    tokens.add(current_token);
+                    pr.unread(current_char);
+                    state = "in_symbol";
+                }
+                // int
+                else if(Character.isDigit(current_char)) {
                     current_token += current_char;
                     state = "in_int_const";
                 }
+                // string
                 else if(current_char == '"') {
                     current_token += current_char;
                     state = "in_string_const";
                 }
+                // letter
                 else if(Character.isLetter(current_char)) {
                     current_token += current_char;
                     state = "in_identifier";
                 }
+                // symbol
                 else if(syms.contains(current_char)) {
                     tokens.add(current_token);
-                    pr.unread(current_char);
                     state = "in_symbol";
+                }
+                break;
+            case "in_comment":
+                if(syms.contains(current_char)) {
+                    current_token += current_char;
+                    state = "in_symbol";
+                }
+                else {
+                    tokens.add(current_token);
+                    token_type = TokenType.SYMBOL;
+                    state = "finish";
+                }
+                break;
+            case "in_int_const":
+                if(Character.isDigit(current_char)) {
+                    current_token += current_char;
+                    state = "in_int_const";
+                }
+                else {
+                    pr.unread(current_char);
+                    token_type = TokenType.INT_CONST;
+                    state = "finish";
+                }
+                break;
+            case "in_string_const":
+                if(current_char != '"') {
+                    current_token += current_char;
+                    state = "in_string_const";
+                }
+                else {
+                    current_token += '"';
+                    token_type = TokenType.STRING_CONST;
+                    state = "finish";
+                }
+                break;
+            case "in_identifier":
+                if(Character.isDigit(current_char) || Character.isLetter(current_char) || current_char == '_' ) {
+                    current_token += current_char;
+                    state = "in_int_const";
+                }
+                else {
+                    if(keywords.contains(current_token)) {
+                    token_type = TokenType.KEYWORD;
+                    }
+                    else {
+                    token_type = TokenType.IDENTIFIER;
+                    }
+                    tokens.add(current_token);
+                    pr.unread(current_char);
+                    state = "finish";
                 }
                 break;
             case "in_symbol":
@@ -54,20 +120,12 @@ public class JackTokenizer {
                 }
                 else {
                     tokens.add(current_token);
-                    state = "start";
+                    token_type = TokenType.SYMBOL;
+                    state = "finish";
                 }
                 break;
-            case "in_identifier":
-                // gather and label identifier
-                break;
-            case "in_int_const":
-                // gather and label int
-                break;
-            case "in_string_const":
-                // gather and label string
-                break;
             default:
-                // advance line or error
+                state = "error";
                 break;
             }
         }
@@ -75,34 +133,35 @@ public class JackTokenizer {
 
 
     public TokenType tokenType() {
-        // switch(){
-        // case:
-        //     break;
-        // case:
-        //     break;
-        // default:
-        //     break;
-        // }
-        return null;
+        return token_type;
     }
 
-    public Keyword keyWord() {
+    public String keyWord() {
+        if(token_type == TokenType.KEYWORD) {
+            return current_token;
+        }
         return null;
     }
 
     public char symbol() {
-        return 'a';
+        if(token_type == TokenType.SYMBOL) {
+            return (char)current_token.charAt(0);
+        }
+        return ' ';
     }
 
     public String identifier() {
+        if(token_type == TokenType.IDENTIFIER) {
+            return current_token;
+        }
         return null;
     }
 
     public int intVal() {
-        return 42;
+        return Integer.parseInt(current_token);
     }
 
     public String stringVal() {
-        return null;
+        return current_token;
     }
 }
