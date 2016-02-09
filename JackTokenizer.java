@@ -23,32 +23,39 @@ public class JackTokenizer {
     }
 
     public void advance() throws IOException {
-        char curr;
-        ArrayList<String> syms = new ArrayList<String>(Arrays.asList("/", ">", "<"));
+        char current_char;
+        ArrayList<String> syms = new ArrayList<String>(Arrays.asList("/", ">", "<", "..."));
         while(state != "finish" && state != "error") {
-            curr = (char)pr.read();
+            current_char = (char)pr.read();
             switch(state) {
             case "start":
-                if(Character.isDigit(curr)) {
-                    current_token += curr;
+                if(Character.isDigit(current_char)) {
+                    current_token += current_char;
                     state = "in_int_const";
                 }
-                else if(curr == '"') {
-                    current_token += curr;
+                else if(current_char == '"') {
+                    current_token += current_char;
                     state = "in_string_const";
                 }
-                else if(Character.isLetter(curr)) {
-                    current_token += curr;
+                else if(Character.isLetter(current_char)) {
+                    current_token += current_char;
                     state = "in_identifier";
                 }
-                else if(syms.contains("curr")) {
+                else if(syms.contains(current_char)) {
                     tokens.add(current_token);
-                    pr.unread(curr);
+                    pr.unread(current_char);
                     state = "in_symbol";
                 }
                 break;
             case "in_symbol":
-                // label symbol and advance
+                if(syms.contains(current_char)) {
+                    current_token += current_char;
+                    state = "in_symbol";
+                }
+                else {
+                    tokens.add(current_token);
+                    state = "start";
+                }
                 break;
             case "in_identifier":
                 // gather and label identifier
@@ -59,7 +66,7 @@ public class JackTokenizer {
             case "in_string_const":
                 // gather and label string
                 break;
-            case default:
+            default:
                 // advance line or error
                 break;
             }
