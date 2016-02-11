@@ -21,8 +21,10 @@ public class JackTokenizer {
     }
 
     public Boolean hasMoreTokens() throws IOException {
-        if(pr.read() == -1)
+        int c = pr.read();
+        if(c == -1)
             return false;
+        pr.unread((char)c);
         return true;
     }
 
@@ -32,11 +34,11 @@ public class JackTokenizer {
         while(state != "finish" && state != "error") {
             prev_char = current_char;
             current_char = (char)pr.read();
-            System.out.println(current_char);
+            //            System.out.println(current_char);
             switch(state) {
             case "start":
                 // whitespace
-                if(current_char == ' ') {
+                if(Character.isWhitespace(current_char)) {
                     break;
                 }
                 // int
@@ -94,7 +96,7 @@ public class JackTokenizer {
                     else {
                         token_type = TokenType.IDENTIFIER;
                     }
-                    tokens.add(current_token);
+                    //tokens.add(current_token);
                     pr.unread(current_char);
                     state = "finish";
                 }
@@ -102,28 +104,43 @@ public class JackTokenizer {
             case "in_symbol":
                 // special case
                 if(current_char == '/') {
-                    readLineComment();
                     token_type = TokenType.COMMENT;
-                    state = "finish";
-                    break;
+                    state = "in_line_comment";
                 }
                 else if (current_char == '*') {
-                    readBlockComment();
                     token_type = TokenType.COMMENT;
-                    state = "finish";
-                    break;
+                    state = "in_block_comment";
                 }
                 else {
                     pr.unread(current_char);
-                    tokens.add(current_token);
+                    //tokens.add(prev_char);
                     token_type = TokenType.SYMBOL;
                     state = "finish";
+                }
+                break;
+            case "in_line_comment":
+                if(pr.read() != '\n') {
+                    state = "in_line_comment";
+                } else {
+                    state = "start";
+                }
+                break;
+            case "in_block_comment":
+                if(pr.read() == '*') {
+                    if(pr.read() == '/') {
+                        state = "start";
+                    }
+                    state = "in_block_comment";
+                }
+                else {
+                    state = "in_block_comment";
                 }
                 break;
             default:
                 state = "error";
                 break;
             }
+            System.out.println(current_token);
         }
     }
 
