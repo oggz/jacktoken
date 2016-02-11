@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public class JackTokenizer {
 
-    enum TokenType {KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST;}
+    enum TokenType {KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST, COMMENT;}
     enum Keyword {CLASS_METHOD,FUNCTION,CONSTRUCTOR,INT,BOOLEAN,CHAR,VOID,VAR,STATIC,FIELD,LET,DO,IF,ELSE,WHILE,RETURN,TRUE,FALSE,NULL,THIS;}
     ArrayList<String> keywords = new ArrayList<String>(Arrays.asList("class_method","function","constructor","int","boolean","char","void",
                                                                         "var","static","field","let","do","if","else","while","return","true","false","null","this"));
@@ -27,8 +27,10 @@ public class JackTokenizer {
     }
 
     public void advance() throws IOException {
-        char current_char;
+        char current_char = ' ';
+        char prev_char = current_char;
         while(state != "finish" && state != "error") {
+            prev_char = current_char;
             current_char = (char)pr.read();
             System.out.println(current_char);
             switch(state) {
@@ -47,26 +49,15 @@ public class JackTokenizer {
                     current_token += current_char;
                     state = "in_string_const";
                 }
-                // letter
+                // identifier
                 else if(Character.isLetter(current_char)) {
                     current_token += current_char;
                     state = "in_identifier";
                 }
                 // symbol
-                else if(syms.contains(current_char)) {
-                    tokens.add(current_token);
-                    state = "in_symbol";
-                }
-                break;
-            case "in_comment":
-                if(syms.contains(current_char)) {
+                else if(syms.contains(Character.toString(current_char))) {
                     current_token += current_char;
                     state = "in_symbol";
-                }
-                else {
-                    tokens.add(current_token);
-                    token_type = TokenType.SYMBOL;
-                    state = "finish";
                 }
                 break;
             case "in_int_const":
@@ -98,10 +89,10 @@ public class JackTokenizer {
                 }
                 else {
                     if(keywords.contains(current_token)) {
-                    token_type = TokenType.KEYWORD;
+                        token_type = TokenType.KEYWORD;
                     }
                     else {
-                    token_type = TokenType.IDENTIFIER;
+                        token_type = TokenType.IDENTIFIER;
                     }
                     tokens.add(current_token);
                     pr.unread(current_char);
@@ -109,12 +100,21 @@ public class JackTokenizer {
                 }
                 break;
             case "in_symbol":
-                //TODO
-                if(syms.contains(current_char)) {
-                    current_token += current_char;
-                    state = "in_symbol";
+                // special case
+                if(current_char == '/') {
+                    readLineComment();
+                    token_type = TokenType.COMMENT;
+                    state = "finish";
+                    break;
+                }
+                else if (current_char == '*') {
+                    readBlockComment();
+                    token_type = TokenType.COMMENT;
+                    state = "finish";
+                    break;
                 }
                 else {
+                    pr.unread(current_char);
                     tokens.add(current_token);
                     token_type = TokenType.SYMBOL;
                     state = "finish";
@@ -128,6 +128,28 @@ public class JackTokenizer {
     }
 
 
+    private void readLineComment() {
+        try {
+            if(pr.read() != '\n') {
+                readLineComment();
+            }
+        }
+        catch(IOException e) {
+
+        }
+    }
+
+    private void readBlockComment() {
+        try {
+            if(pr.read() != '*') {
+                readLineComment();
+            }
+        }
+        catch(IOException e) {
+
+        }
+    }
+    
     public TokenType tokenType() {
         return token_type;
     }

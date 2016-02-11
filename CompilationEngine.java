@@ -3,9 +3,9 @@ import java.io.IOException;
 public class CompilationEngine {
 
     JackTokenizer jt;
-    public CompilationEngine(String in, String xml) {
+    public CompilationEngine(String infile, String xml) {
         try {
-            jt = new JackTokenizer(in);
+            jt = new JackTokenizer(infile);
         }
         catch(IOException e) {
             System.out.println(e.toString());
